@@ -1,7 +1,7 @@
 # TES - Trip Expense Splitter
 
 ## Introduction
-TES is a utility developed to calculate individual share for any trip expense, provided every expense incured in the trip can be equally shared among **two or more** persons.
+TES is a utility developed to calculate individual share for any trip expense, provided every expense incured in the trip can be equally shared among **two or more** persons. Beware although intermidiate files are used during computation the values entered will be available in memory only so once you close the application your details will be lost.
 
 *NOTE: For now I have set the maximum limit the script can handle is 10 persons (You can increase the count and I guess it should work)*
 
@@ -91,3 +91,11 @@ Sample Screenshots: [menu](https://raw.githubusercontent.com/cbalu/TES/master/sc
 ### Exiting the application
 You can exit the application using two ways. You can always use the `<ESC>` key anytime to bring up the exit confirmation message and also choose the **Exit this program** option under menu. Once you confirm the exit the script will stop execution, this is the proper way to end the application **DONOT USE CTRL+C COMBINATION TO END THE APPLICATION**
 Sample Screenshots: [menu](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/14-exit_option.png) - [exit-confirmation](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/15-exit_confirmation.png) - [goodbye](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/16-final_goodbye.png)
+
+## Revision Log
+
+* 0.1 - Pre-alpha release with equal split options and ability to compute individual share
+
+## License
+
+You are free to use the code for both personal and commercial purpose as the license it accompains is GPL v3. For further details please refer the [link](http://www.gnu.org/copyleft/gpl.html)
