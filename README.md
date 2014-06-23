@@ -98,4 +98,4 @@ Sample Screenshots: [menu](https://raw.githubusercontent.com/cbalu/TES/master/sc
 
 ## License
 
-You are free to use the code for both personal and commercial purpose as the license it accompains is GPL v3. For further details please refer the [link](http://www.gnu.org/copyleft/gpl.html)
+You are free to use the code for your personal purpose as the license it accompains is GPL v3. For further details please refer the [link](http://www.gnu.org/copyleft/gpl.html)
