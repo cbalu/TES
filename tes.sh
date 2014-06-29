@@ -32,6 +32,9 @@ g_var_expense=0
 g_var_payee=""
 g_var_share=()
 
+# Global variable used to hold random number
+g_var_rndnum=$RANDOM
+
 # Table used to do all calculation on expense
 declare -A g_var_table
 
@@ -91,10 +94,10 @@ function _write_log {
 		var_echo="echo -n"
 	fi
 
-	if [ -f log.txt ]; then
-		$var_echo $1 >> log.txt
+	if [ -f .$g_var_rndnum.log ]; then
+		$var_echo $1 >> .$g_var_rndnum.log
 	else
-		$var_echo $1 > log.txt
+		$var_echo $1 > .$g_var_rndnum.log
 	fi
 }
 
@@ -110,8 +113,8 @@ function _show_error {
 
 # Remove the intermitant files
 function perform_cleanup {
-	rm -f log.txt > /dev/null 2>&1
-	rm -f calc.txt > /dev/null 2>&1
+	rm -f .$g_var_rndnum.log > /dev/null 2>&1
+	rm -f .$g_var_rndnum.calc > /dev/null 2>&1
 }
 
 # Show exit/quit confirmation message
@@ -322,8 +325,8 @@ function show_author_name {
 # Show recorded log for all details entered
 function show_detail_log {
 	# Read the log file and show the content
-	if [ -f log.txt ]; then
-		dialog --stdout --exit-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** LOG ******" --textbox log.txt 30 60
+	if [ -f .$g_var_rndnum.log ]; then
+		dialog --stdout --exit-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** LOG ******" --textbox .$g_var_rndnum.log 30 60
 	else
 		_show_message "$msg_info_empty_log"
 	fi
@@ -337,10 +340,10 @@ function show_individual_share {
 	local var_amt=0
 	local var_req=""
 
-	rm -f calc.txt > /dev/null 2>&1
-	if [ -f log.txt ]; then
+	rm -f .$g_var_rndnum.calc > /dev/null 2>&1
+	if [ -f .$g_var_rndnum.log ]; then
 		# Nothing to do here proceed freely
-		echo "" > calc.txt
+		echo "" > .$g_var_rndnum.calc
 	else
 		_show_message "$msg_info_empty_log"
 		validate_keystroke draw_menu draw_menu
@@ -368,20 +371,20 @@ function show_individual_share {
 				continue
 			else
 				if [[ $(echo "$msg_general_scale; ${g_var_table[$(( $var_req-1 )),$var_i]} == ${g_var_table[$var_i,$(( $var_req-1 ))]}" | bc) -eq 1 ]]; then
-					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to give/get nothing to/from \"${g_var_persons[$var_i]}\"" >> calc.txt
+					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to give/get nothing to/from \"${g_var_persons[$var_i]}\"" >> .$g_var_rndnum.calc
 				elif [[ $(echo "$msg_general_scale; ${g_var_table[$(( $var_req-1 )),$var_i]} > ${g_var_table[$var_i,$(( var_req-1 ))]}" | bc) -eq 1 ]]; then
 					var_amt=$(echo "$msg_general_scale; ${g_var_table[$(( $var_req-1 )),$var_i]} - ${g_var_table[$var_i,$(( var_req-1 ))]}" | bc)
-					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to get $g_var_currency$var_amt from \"${g_var_persons[$var_i]}\"" >> calc.txt
+					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to get $g_var_currency$var_amt from \"${g_var_persons[$var_i]}\"" >> .$g_var_rndnum.calc
 				else
 					var_amt=$(echo "$msg_general_scale; ${g_var_table[$var_i,$(( $var_req-1 ))]} - ${g_var_table[$(( $var_req-1 )),$var_i]}" | bc)
-					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to give $g_var_currency$var_amt to \"${g_var_persons[$var_i]}\"" >> calc.txt
+					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to give $g_var_currency$var_amt to \"${g_var_persons[$var_i]}\"" >> .$g_var_rndnum.calc
 				fi
 			fi
 		done
 	fi
 
 	# Read the file and show the content to user
-	dialog --stdout --exit-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** SHARE ******" --textbox calc.txt 30 60
+	dialog --stdout --exit-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** SHARE ******" --textbox .$g_var_rndnum.calc 30 60
 	validate_keystroke draw_menu draw_menu
 	draw_menu
 }
@@ -478,6 +481,7 @@ function trap_handler {
 function check_prerequisite {
 	local var_fail=0
 	local var_tput_found=0
+	local var_writeprm_notfound=0
 	local var_dialog_notfound=0
 	local var_bc_notfound=0
 
@@ -500,6 +504,30 @@ function check_prerequisite {
 		echo "$(tput bold)$(tput setaf 7)"
 	fi
 
+	# We need permission to create files under current directory
+	# as we need to use few files for logging and calcualtion
+	# purposes, lets check that one first
+	touch $g_var_rndnum > /dev/null 2>&1
+	if [[ $? -eq 0 ]]; then
+		if [[ $var_tput_found -eq 1 ]]; then
+			echo "$(tput setaf 2)"
+		fi
+		echo "Checking for write permission in current directory .... [   FOUND   ]"
+		rm -f $g_var_rndnum > /dev/null 2>&1
+		if [[ $var_tput_found -eq 1 ]]; then
+			echo "$(tput setaf 7)"
+		fi
+	else
+		if [[ $var_tput_found -eq 1 ]]; then
+			echo "$(tput setaf 1)"
+		fi
+		echo "Checking for write permission in current directory .... [ NOT FOUND ]"
+		var_writeprm_notfound=1
+		var_fail=1
+		if [[ $var_tput_found -eq 1 ]]; then
+			echo "$(tput setaf 7)"
+		fi
+	fi
 	# We need 'dialog' this entire script make use of that to show
 	# various components. So check is mandatory for the utility
 	dialog -v > /dev/null 2>&1
@@ -554,23 +582,31 @@ function check_prerequisite {
 	# with how to install the required tools, if things are
 	# well here then lets start rolling by showing welcome
 	if [[ $var_fail -eq 1 ]]; then
-		echo "Please install missing component by running the following command from your terminal"
-		echo ""
-		echo -n "\" sudo apt-get install"
-		if [[ $var_dialog_notfound -eq 1 ]]; then
-			echo -n " dialog "
-		elif [[ $var_bc_notfound -eq 1 ]]; then
-			echo -n " bc "
-		else
-			echo -n " "
+		if [[ $var_writeprm_notfound -eq 1 ]]; then
+			echo "Script can't create intermitent files in current directory"
+			echo "Please adjust the permission is such a way that script can"
+			echo "create few temporary files which is required for its"
+			echo "internal usuage and doing calculations "
+		fi	
+		if [[ $var_dialog_notfound -eq 1 || $var_bc_notfound -eq 1 ]]; then
+			echo "Please install missing component by running the following command from your terminal"
+			echo ""
+			echo -n "\" sudo apt-get install"
+			if [[ $var_dialog_notfound -eq 1 ]]; then
+				echo -n " dialog "
+			elif [[ $var_bc_notfound -eq 1 ]]; then
+				echo -n " bc "
+			else
+				echo -n " "
+			fi
+			echo "\""
+			echo ""
+			echo "After installing missing component(s) re-run this application"
+			echo "==========================================================="
+			echo "#### PREREQUISITE CHECK FAILED SO QUITTING APPLICATION ####"
+			echo "==========================================================="
+			exit
 		fi
-		echo "\""
-		echo ""
-		echo "After installing missing component(s) re-run this application"
-		echo "==========================================================="
-		echo "#### PREREQUISITE CHECK FAILED SO QUITTING APPLICATION ####"
-		echo "==========================================================="
-		exit
 	else
 		# Install trap handler for INT signal alone
 		trap trap_handler INT
