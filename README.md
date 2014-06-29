@@ -29,7 +29,7 @@ TES is a utility developed to calculate individual share for any trip expense, p
 * Use `<ESC>` key anytime to quit/exit from the script
 
 ### Getting the script for work
-If you have git installed in your linux machine you can clone the entire repository using the following command
+If you have git installed in your linux machine you can checkout the entire repository using the following command
 
 `git checkout https://github.com/cbalu/TES`
 
@@ -47,7 +47,7 @@ The script has to be made as executable before running it. This can be achived b
 `chmod +x tes.sh`
 
 ### Executing the script
-The script can be executed by cahnging to the corresponding directory where the script file is saved and then invoked by the following command
+The script can be executed by changing to the corresponding directory where the script file is saved and then invoked by the following command
 
 `./tes.sh`
 

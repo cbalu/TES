@@ -108,13 +108,18 @@ function _show_error {
 	dialog --stdout --backtitle "$msg_general_title" --colors --title "****** ERROR ******" --msgbox "\Zb\Z1$1\ZB\Zn\n" 10 70
 }
 
+# Remove the intermitant files
+function perform_cleanup {
+	rm -f log.txt > /dev/null 2>&1
+	rm -f calc.txt > /dev/null 2>&1
+}
+
 # Show exit/quit confirmation message
 function _show_exit_message {
 	dialog --stdout --backtitle "$msg_general_title" --yesno "$msg_info_confirm_exit" 8 40
 	case "$?" in
 	0)		_show_message "$msg_info_onexit"
-			rm -f log.txt > /dev/null 2>&1
-			rm -f calc.txt > /dev/null 2>&1
+			perform_cleanup
 			clear
 			exit
 			;;
@@ -460,6 +465,15 @@ function welcome_message {
 	get_count
 }
 
+# Trap handler
+function trap_handler {
+	# User wish to quit, so show message and die
+	_show_message "$msg_info_onexit"
+	perform_cleanup
+	clear
+	exit
+}
+
 # Make sure we have the tools to finish the job at hand
 function check_prerequisite {
 	local var_fail=0
@@ -558,6 +572,8 @@ function check_prerequisite {
 		echo "==========================================================="
 		exit
 	else
+		# Install trap handler for INT signal alone
+		trap trap_handler INT
 		welcome_message
 	fi
 }
