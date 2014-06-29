@@ -89,7 +89,7 @@ You can get individual person share by selecting **Show individual share** under
 Sample Screenshots: [menu](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/11-individual_share.png) - [pick-person](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/12-pick_person_for_share.png) - [view-share](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/13-share_view.png)
 
 ### Exiting the application
-You can exit the application using two ways. You can always use the `<ESC>` key anytime to bring up the exit confirmation message and also choose the **Exit this program** option under menu. Once you confirm the exit the script will stop execution, this is the proper way to end the application **DONOT USE CTRL+C COMBINATION TO END THE APPLICATION**
+You can exit the application using two ways. You can always use the `<ESC>` key anytime to bring up the exit confirmation message and also choose the **Exit this program** option under menu. Once you confirm to quit, the script will stop execution, this is the proper way to end the application **IF YOU USE CTRL+C COMBINATION TO END THE APPLICATION THEN IT QUITS IMMEDIATELY WITHOUT ANY INTERVENTION AND ALL THE CALCULATIONS WILL BE LOST**
 Sample Screenshots: [menu](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/14-exit_option.png) - [exit-confirmation](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/15-exit_confirmation.png) - [goodbye](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/16-final_goodbye.png)
 
 ## Revision Log
