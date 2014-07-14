@@ -77,8 +77,8 @@ You can use `<UP> <DOWN>` or numbers to select the corresponding items in menu t
 Sample Screenshot: [menu](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/04-menu.png)
 
 ### Adding trip expense
-Once you choose the **Add trip details (Equal split)**  in menu, you can start entering the expense incurred for individual item and then who paid the expense(use `<SPACEBAR>` to make the selection) along with who are all the persons going to share the expense. Once the details has been added a confirmation message is shown
-Sample Screenshots: [expense-cost](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/05-enter_expense.png) - [pick-payee](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/06-pick_payee.png) - [persons-sharing](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/07-share_persons.png) - [confirmation-msg](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/08-details_added.png)
+Once you choose the **Add trip details (Equal split)**  in menu, you can start entering the expense incurred for individual item, to change the trip date choose "Pick date" button and then pick the date(use `<TAB>` to move between day, month and year and user `<UP><DOWN>` arrow to change selection) also to move between "Short description" and "Amount spent" use `<UP><DOWN>` key and then followed by who paid the expense(use `<SPACEBAR>` to make the selection) along with who are all the persons going to share the expense. Once the details has been added a confirmation message is shown
+Sample Screenshots: [expense-cost](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/05-enter_expense.png) - [pick-date](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/05a-pick_date.png) - [pick-payee](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/06-pick_payee.png) - [persons-sharing](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/07-share_persons.png) - [confirmation-msg](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/08-details_added.png)
 
 ### Viewing log
 You can view the log for every expense added from the menu by selecting **Show details log**
@@ -94,6 +94,7 @@ Sample Screenshots: [menu](https://raw.githubusercontent.com/cbalu/TES/master/sc
 
 ## Revision Log
 
+* 0.2 - Added calendar to pick the trip date and also added short description field
 * 0.1 - Pre-alpha release with equal split options and ability to compute individual share
 
 ## License
