@@ -68,14 +68,14 @@ msg_general_title="TES"
 msg_general_scale="scale=2"  # Scale for BC command (No. of digits after decimal point)
 msg_err_invalid_number="Entered value makes no sense, please enter value in range 2 to $g_var_maxcount"
 msg_err_max_exceeded="Entered value is more than what we can handle now, please enter value in range 2 to $g_var_maxcount"
-msg_err_invalid_input="Entered value doesn't seems to be a valid integer, please enter value in range 2 to $g_var_maxcount"
+msg_err_invalid_input="Entered value doesn't seems to be a valid one, please enter value in range 2 to $g_var_maxcount"
 msg_err_empty_name="One/many of the name is empty, fill all person(s) name to proceed"
 msg_err_invalid_expense="Invalid input, enter valid expense amount"
 msg_err_missing_description="Short description is missing, please fill that field"
 msg_err_missing_expense="Amount spent value is missing, please fill that field"
 msg_err_min_share_count="Please pick atleast two persons who share the expense"
 msg_err_need_payee="Please pick the person who did the payment to proceed further"
-msg_err_pick_indiv="Please choose a person to know his share"
+msg_err_pick_indiv="Please choose a person to know his/her share"
 msg_info_add_success="Details added successfully"
 msg_info_empty_log="No details have been added, nothing to show now"
 msg_info_confirm_exit="Do you want to quit the app ?"
@@ -128,6 +128,7 @@ function _show_error {
 function perform_cleanup {
 	rm -f .$g_var_rndnum.log > /dev/null 2>&1
 	rm -f .$g_var_rndnum.calc > /dev/null 2>&1
+	rm -f .tmp > /dev/null 2>&1
 }
 
 # Show exit/quit confirmation message
