@@ -22,12 +22,16 @@
 #
 # Revision Log
 # ============
+# Version 0.2 <===> Fixed minor issue and introduced calendar
+#
 # Version 0.1 <===> Pre-alpha release
 #
 
 # Global variable
 g_var_count=0
 g_var_persons=()
+g_var_date=""
+g_var_desc=""
 g_var_expense=0
 g_var_payee=""
 g_var_share=()
@@ -67,6 +71,8 @@ msg_err_max_exceeded="Entered value is more than what we can handle now, please 
 msg_err_invalid_input="Entered value doesn't seems to be a valid integer, please enter value in range 2 to $g_var_maxcount"
 msg_err_empty_name="One/many of the name is empty, fill all person(s) name to proceed"
 msg_err_invalid_expense="Invalid input, enter valid expense amount"
+msg_err_missing_description="Short description is missing, please fill that field"
+msg_err_missing_expense="Amount spent value is missing, please fill that field"
 msg_err_min_share_count="Please pick atleast two persons who share the expense"
 msg_err_need_payee="Please pick the person who did the payment to proceed further"
 msg_err_pick_indiv="Please choose a person to know his share"
@@ -75,10 +81,17 @@ msg_info_empty_log="No details have been added, nothing to show now"
 msg_info_confirm_exit="Do you want to quit the app ?"
 msg_info_onexit="Bye, have a nice day :)\nPress ENTER/ESC key to quit"
 msg_label_back="Back"
+msg_label_pickdate="Pick date"
+
+# General options to be used
+option_debug_append_text=0
+option_debug_overwrite_text=1
+option_log_add_newline=0
+option_log_no_newline=1
 
 # Used for debugging purpose
 function _debug {
-	if [[ $2 -eq 0 ]]; then
+	if [[ $2 -eq $option_debug_append_text ]]; then
 		echo $1 >> debug.txt
 	else
 		echo $1 > debug.txt
@@ -88,7 +101,7 @@ function _debug {
 # Write the log to file
 function _write_log {
 	local var_echo=""
-	if [[ $2 -eq 0 ]]; then
+	if [[ $2 -eq $option_log_add_newline ]]; then
 		var_echo="echo"
 	else
 		var_echo="echo -n"
@@ -135,10 +148,10 @@ function _show_exit_message {
 
 # General call to handle both <Back> button and ESC key press
 function validate_keystroke {
-	case "$?" in
-	1)		$2
+	case "$1" in
+	1)		$3
 			;;
-	255)	_show_exit_message $1
+	255)	_show_exit_message $2
 			;;
 	esac
 }
@@ -174,6 +187,7 @@ function validate_expense {
 # Clear global variable which are going to be reused
 function clear_global_vars {
 	g_var_expense=0
+	g_var_desc=""
 	g_var_payee=""
 	g_var_share=""
 }
@@ -222,10 +236,10 @@ function do_eqsplit_calculations {
 	# Shift + V - Select the section
 	# Type :s/^/# - To comment the block selected
 	# Type :s/^#// - To uncomment the block selected
-#	_debug "Printing the table values as follows" 0
+#	_debug "Printing the table values as follows" $option_debug_append_text
 #	for ((var_i=0;var_i<$g_var_count;var_i++)) do
 #		for ((var_j=0;var_j<$g_var_count;var_j++)) do
-#			_debug "Table [ $var_i, $var_j ] = ${g_var_table[$var_i,$var_j]}" 0
+#			_debug "Table [ $var_i, $var_j ] = ${g_var_table[$var_i,$var_j]}" $option_debug_append_text
 #		done
 #	done
 }
@@ -247,7 +261,7 @@ function pick_persons {
 		(( var_i++ ))
 	done
 	g_var_share=(`eval $var_cmd`)
-	validate_keystroke $FUNCNAME pick_payee
+	validate_keystroke $? $FUNCNAME pick_payee
 
 	# Make sure we have atleast two persons to share the expense
 	var_share_len=${#g_var_share[@]}
@@ -256,17 +270,17 @@ function pick_persons {
 		$FUNCNAME
 	else
 		do_eqsplit_calculations
-		_write_log "$g_var_currency$g_var_expense paid by \"${g_var_persons[$(( $g_var_payee-1 ))]}\" is shared among \"" 1
+		_write_log "[$g_var_date] $g_var_currency$g_var_expense paid by \"${g_var_persons[$(( $g_var_payee-1 ))]}\" for \"$g_var_desc\" is shared among \"" $option_log_no_newline
 		for ((var_i=0;var_i<${#g_var_share[@]};var_i++)) do
 			if [[ $var_i -ne 0 ]]; then
-				_write_log ", " 1
+				_write_log ", " $option_log_no_newline
 			fi
 #			if [[ $var_i -eq $(( ${g_var_share[$var_i]}-1 )) ]]; then
-#				_write_log "${g_var_persons[$var_i]}" 1
+#				_write_log "${g_var_persons[$var_i]}" $option_log_no_newline
 #			fi
-			_write_log "${g_var_persons[$(( ${g_var_share[$var_i]}-1 ))]}" 1
+			_write_log "${g_var_persons[$(( ${g_var_share[$var_i]}-1 ))]}" $option_log_no_newline
 		done
-		_write_log "\"" 0
+		_write_log "\"" $option_log_add_newline
 		_show_message "$msg_info_add_success"
 		clear_global_vars
 		draw_menu
@@ -283,7 +297,7 @@ function pick_payee {
 		(( var_i++ ))
 	done
 	g_var_payee=(`eval $var_cmd`)
-	validate_keystroke $FUNCNAME get_total_expense
+	validate_keystroke $? $FUNCNAME get_total_expense
 
 	if [[ ${#g_var_payee} -eq 0 ]]; then
 		_show_error "$msg_err_need_payee"
@@ -295,10 +309,52 @@ function pick_payee {
 
 # Read total expense incured for a particular cause
 function get_total_expense {
-	g_var_expense=`dialog --stdout --cancel-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** EXPENSE AMOUNT ******" --inputbox "Enter amount spent: " 0 0`
-	validate_keystroke $FUNCNAME draw_menu
+	local var_ret=0
+	local var_count=0
+	local var_expense=0
+	local var_date=""
+	local var_desc=""
+	if [[ ${#g_var_date} -eq 0 ]]; then
+		g_var_date=`date +%d`/`date +%m`/`date +%Y`
+	fi
+	dialog --stdout --extra-button --extra-label "$msg_label_pickdate" --cancel-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** EXPENSE DETAILS ******" --mixedform "Enter the following details" 18 60 0 "Trip Date: " 1 1 "$g_var_date" 1 20 20 0 2 "Short description: " 3 1 "$g_var_desc" 3 20 120 0 0 "Amount spent: " 5 1 "$g_var_expense" 5 20 10 0 0 > .tmp
+	var_ret=$?
+	if [[ $var_ret  -eq 3 ]]; then
+		local var_day=`echo $g_var_date | cut -d'/' -f1`
+		local var_month=`echo $g_var_date | cut -d'/' -f2`
+		local var_year=`echo $g_var_date | cut -d'/' -f3`
+		var_ret=`dialog --stdout --no-cancel --calendar "Pick trip date:" 0 0 $var_day $var_month $var_year`
+		validate_keystroke $? $FUNCNAME $FUNCNAME
+		g_var_date=$var_ret
+		$FUNCNAME
+	fi
+	validate_keystroke $var_ret $FUNCNAME draw_menu
 
-	local var_ret=$(validate_expense $g_var_expense)
+	while IFS= read -r line
+	do
+    	if [[ $var_count -eq 0 ]]; then
+        	var_date=$line
+    	elif [[ $var_count -eq 1 ]]; then
+        	var_desc=$line
+    	elif [[ $var_count -eq 2 ]]; then
+        	var_expense=$line
+    	fi
+    	let var_count++
+	done <".tmp"
+
+	rm -f .tmp > /dev/null 2>&1
+	if [[ ${#var_desc} -eq 0 ]]; then
+		_show_error "$msg_err_missing_description"
+		$FUNCNAME
+	fi
+	g_var_desc=$var_desc
+	if [[ ${#var_expense} -eq 0 ]]; then
+		_show_error "$msg_err_missing_expense"
+		$FUNCNAME
+	fi
+
+	g_var_expense=$var_expense
+	var_ret=$(validate_expense $g_var_expense)
 	if [[ $var_ret -eq $ret_err_invalid_expense ]]; then
 		_show_error "$msg_err_invalid_expense"
 		$FUNCNAME
@@ -330,7 +386,7 @@ function show_detail_log {
 	else
 		_show_message "$msg_info_empty_log"
 	fi
-	validate_keystroke draw_menu draw_menu
+	validate_keystroke $? draw_menu draw_menu
 	draw_menu
 }
 
@@ -346,7 +402,7 @@ function show_individual_share {
 		echo "" > .$g_var_rndnum.calc
 	else
 		_show_message "$msg_info_empty_log"
-		validate_keystroke draw_menu draw_menu
+		validate_keystroke $? draw_menu draw_menu
 		draw_menu
 	fi
 	
@@ -358,12 +414,12 @@ function show_individual_share {
 		(( var_i++ ))
 	done
 	var_req=(`eval $var_cmd`)
-	validate_keystroke $FUNCNAME draw_menu
+	validate_keystroke $? $FUNCNAME draw_menu
 
 	# We got the person, do calculation and write it to file
 	if [[ $var_req -eq 0 ]]; then
 		_show_error "$msg_err_pick_indiv"
-		validate_keystroke draw_menu draw_menu
+		validate_keystroke $? draw_menu draw_menu
 		$FUNCNAME
 	else
 		for ((var_i=0;var_i<$g_var_count;var_i++)) do
@@ -385,19 +441,20 @@ function show_individual_share {
 
 	# Read the file and show the content to user
 	dialog --stdout --exit-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** SHARE ******" --textbox .$g_var_rndnum.calc 30 60
-	validate_keystroke draw_menu draw_menu
+	validate_keystroke $? draw_menu draw_menu
 	draw_menu
 }
 
 # Show menu for the user to choose between various options
 function draw_menu {
-	local var_ret=`dialog --stdout --cancel-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** MENU ******" --menu "Please choose one of the following option:" 20 60 5 \
+	local var_ret=0
+	var_ret=`dialog --stdout --cancel-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** MENU ******" --menu "Please choose one of the following option:" 20 60 5 \
 	                      1 "Add trip details (Equal split)" \
 	                      2 "Show individual share" \
 	                      3 "Show details log" \
 	                      4 "Show author name" \
 	                      5 "Exit this program"`
-	validate_keystroke $FUNCNAME get_person_names
+	validate_keystroke $? $FUNCNAME get_person_names
 	if [[ $var_ret -eq 1 ]]; then
 		get_total_expense
 	elif [[ $var_ret -eq 2 ]]; then
@@ -409,7 +466,7 @@ function draw_menu {
 	elif [[ $var_ret -eq 5 ]]; then
 		_show_exit_message $FUNCNAME
 	else
-		echo "This case is not possible"
+		echo "This case is not possible with ret: $var_ret"
 	fi
 }
 
@@ -424,7 +481,7 @@ function get_person_names {
 	done
 	IFS=$'\n'
 	g_var_persons=(`eval $var_cmd`)
-	validate_keystroke $FUNCNAME get_count
+	validate_keystroke $? $FUNCNAME get_count
 	unset IFS
 
 	local var_k=0
@@ -445,7 +502,7 @@ function get_person_names {
 # Read number of persons involved in the trip
 function get_count {
 	g_var_count=`dialog --stdout --nocancel --backtitle "$msg_general_title" --title "****** PERSON COUNT ******" --inputbox "Enter no. of persons involved in the trip (for now max $g_var_maxcount): " 10 50`
-	validate_keystroke $FUNCNAME get_count
+	validate_keystroke $? $FUNCNAME get_count
 	local var_ret=$(validate_count $g_var_count)
 	if [[ $var_ret -eq $ret_err_invalid_number ]]; then
 		_show_error "$msg_err_invalid_number"
