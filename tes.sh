@@ -324,7 +324,7 @@ function get_total_expense {
 		local var_day=`echo $g_var_date | cut -d'/' -f1`
 		local var_month=`echo $g_var_date | cut -d'/' -f2`
 		local var_year=`echo $g_var_date | cut -d'/' -f3`
-		var_ret=`dialog --stdout --no-cancel --calendar "Pick trip date:" 0 0 $var_day $var_month $var_year`
+		var_ret=`dialog --stdout --no-cancel --backtitle "$msg_general_title" --title "****** TRIP DATE ******" --calendar "Pick trip date:" 0 0 $var_day $var_month $var_year`
 		validate_keystroke $? $FUNCNAME $FUNCNAME
 		g_var_date=$var_ret
 		$FUNCNAME
