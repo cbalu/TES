@@ -115,8 +115,13 @@ function _write_log {
 }
 
 # General call to show informational message which gets closed after specified seconds
+# If seconds parameter is not provided then default 3 seconds will be used
 function _show_auto_close_message {
-	dialog --stdout --backtitle "$msg_general_title" --title "****** MESSAGE ******" --pause "$1" 10 70 $2
+	if [ -z "$2" ]; then
+		dialog --stdout --backtitle "$msg_general_title" --title "****** MESSAGE ******" --pause "$1" 10 70 3
+	else
+		dialog --stdout --backtitle "$msg_general_title" --title "****** MESSAGE ******" --pause "$1" 10 70 $2
+	fi
 }
 
 # General call to show informational message
@@ -140,7 +145,7 @@ function perform_cleanup {
 function _show_exit_message {
 	dialog --stdout --backtitle "$msg_general_title" --yesno "$msg_info_confirm_exit" 8 40
 	case "$?" in
-	0)		_show_auto_close_message "$msg_info_onexit" 3
+	0)		_show_auto_close_message "$msg_info_onexit" 5
 			perform_cleanup
 			clear
 			exit
@@ -534,7 +539,7 @@ function welcome_message {
 # Trap handler
 function trap_handler {
 	# User wish to quit, so show message and die
-	_show_message "$msg_info_onexit"
+	_show_auto_close_message "$msg_info_onexit"
 	perform_cleanup
 	clear
 	exit
