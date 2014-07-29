@@ -114,6 +114,11 @@ function _write_log {
 	fi
 }
 
+# General call to show informational message which gets closed after specified seconds
+function _show_auto_close_message {
+	dialog --stdout --backtitle "$msg_general_title" --title "****** MESSAGE ******" --pause "$1" 10 70 $2
+}
+
 # General call to show informational message
 function _show_message {
 	dialog --stdout --backtitle "$msg_general_title" --title "****** MESSAGE ******" --msgbox "$1" 10 70
@@ -135,7 +140,7 @@ function perform_cleanup {
 function _show_exit_message {
 	dialog --stdout --backtitle "$msg_general_title" --yesno "$msg_info_confirm_exit" 8 40
 	case "$?" in
-	0)		_show_message "$msg_info_onexit"
+	0)		_show_auto_close_message "$msg_info_onexit" 3
 			perform_cleanup
 			clear
 			exit
