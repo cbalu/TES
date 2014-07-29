@@ -531,7 +531,7 @@ function get_count {
 
 # Welcome message
 function welcome_message {
-	# I agree its not a very worm welcome, but still we start with greetings
+	# I agree its not a very warm welcome, but still we start with greetings
 	dialog --colors --no-collapse --backtitle "$msg_general_title" --msgbox "       Welcome to \ZuTES\ZU\n( \ZbT\ZBrip \ZbE\ZBxpense \ZbS\ZBplitter )" 0 0
 	get_count
 }
@@ -573,7 +573,7 @@ function check_prerequisite {
 	fi
 
 	# We need permission to create files under current directory
-	# as we need to use few files for logging and calcualtion
+	# as we need to use few files for logging and calculation
 	# purposes, lets check that one first
 	touch $g_var_rndnum > /dev/null 2>&1
 	if [[ $? -eq 0 ]]; then
