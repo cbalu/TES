@@ -157,7 +157,7 @@ function _show_exit_message {
 	esac
 }
 
-# General call to handle both <Back> button and ESC key press
+# General call to handle both <Back> button and <ESC> key press
 function validate_keystroke {
 	case "$1" in
 	1)		$3
@@ -167,32 +167,34 @@ function validate_keystroke {
 	esac
 }
 
-# Validate the person count read from user
+# Validate the input number read from user
+# used to validate person(s) count
 function validate_count {
-	if [[ $1 != *[!0-9]* ]]; then
-		if [[ $1 -eq 0 ]] || [[ $1 -eq 1 ]]; then
-			echo $ret_err_invalid_number                # We got value which makes no sense
-		elif [[ $1 -le $g_var_maxcount ]]; then
-			echo $ret_success                           # We got a valid value so we can proceed further
-		else
-			echo $ret_err_max_exceeded                  # We got value which we can't handle now
-		fi
-	else
-		echo $ret_err_invalid_input                     # We haven't got a valid number
+	local input_number=$1
+
+	# Check for whole number
+	if [[ $input_number =~ ^[0-9]+$ ]]; then
+		echo $ret_success
+		return
 	fi
+
+	# We haven't got a valid number
+	echo $ret_err_invalid_input
 }
 
-# Validate the expense input read from user
+# Validate the input number for floating point with scale of 2 atmost
+# also whole number is accepted, used to validate amount/expense
 function validate_expense {
-	if [[ $1 != *[!0-9]* ]]; then
-		if [[ $1 -le 0 ]]; then
-			echo $ret_err_invalid_expense               # We got expense which makes no sense
-		else
-			echo $ret_success                           # We got a valid value so we can proceed further
-		fi
-	else
-		echo $ret_err_invalid_expense                   # We got expense which makes no sense
+	local input_number=$1
+
+	# Check for floating point number/whole number
+	if [[ $input_number =~ ^[0-9]+(\.?[0-9]{1,2})$ ]]; then
+		echo $ret_success
+		return
 	fi
+
+	# We haven't got a valid number
+	echo $ret_err_invalid_expense
 }
 
 # Clear global variable which are going to be reused
@@ -484,48 +486,56 @@ function draw_menu {
 # Get individual person name for proceeding further
 function get_person_names {
 	local var_i=1
+	local var_j=0
 	local var_cmd="dialog --stdout --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** ENTER PERSON DETAILS ******\" --form \"Enter individual name in following field:\" 18 60 0"
 	while [[ var_i -le $g_var_count ]]
 	do
 		var_cmd="$var_cmd \"Person$var_i Name: \" $var_i 1 \"${g_var_persons[$(( $var_i-1 ))]}\" $var_i 20 20 0"
 		(( var_i++ ))
 	done
+
+	# Modify IFS so that we can read person name containing space as well
 	IFS=$'\n'
 	g_var_persons=(`eval $var_cmd`)
-	validate_keystroke $? $FUNCNAME get_count
+	validate_keystroke $? $FUNCNAME get_person_count
 	unset IFS
 
-	local var_k=0
-	while [[ var_k -lt $g_var_count ]]
+	while [[ var_j -lt $g_var_count ]]
 	do
-		if [[ ${#g_var_persons[$var_k]} -eq 0 ]];
+		if [[ ${#g_var_persons[$var_j]} -eq 0 ]];
 		then
 			_show_error "$msg_err_empty_name"
 			$FUNCNAME
 		fi
-		(( var_k++ ))
+		(( var_j++ ))
 	done
 
+	# Once we have person names initialize table and draw menu
 	do_table_init
 	draw_menu
 }
 
 # Read number of persons involved in the trip
-function get_count {
+function get_person_count {
 	g_var_count=`dialog --stdout --nocancel --backtitle "$msg_general_title" --title "****** PERSON COUNT ******" --inputbox "Enter no. of persons involved in the trip (for now max $g_var_maxcount): " 10 50`
-	validate_keystroke $? $FUNCNAME get_count
+	validate_keystroke $? $FUNCNAME $FUNCNAME
 	local var_ret=$(validate_count $g_var_count)
-	if [[ $var_ret -eq $ret_err_invalid_number ]]; then
-		_show_error "$msg_err_invalid_number"
-		$FUNCNAME
-	elif [[ $var_ret -eq $ret_err_max_exceeded ]]; then
-		_show_error "$msg_err_max_exceeded"
-		$FUNCNAME
-	elif [[ $var_ret -eq $ret_err_invalid_input ]]; then
+
+	if [[ $var_ret -eq $ret_err_invalid_input ]]; then
 		_show_error "$msg_err_invalid_input"
 		$FUNCNAME
 	else
-		get_person_names
+		if [[ $g_var_count -eq 0 ]] || [[ $g_var_count -eq 1 ]]; then
+			# We got value which makes no sense
+			_show_error "$msg_err_invalid_number"
+			$FUNCNAME
+		elif [[ $g_var_count -gt $g_var_maxcount ]]; then
+			# We got value which we can't handle now
+			_show_error "$msg_err_max_exceeded"
+			$FUNCNAME
+		else
+			get_person_names
+		fi
 	fi
 }
 
@@ -533,7 +543,7 @@ function get_count {
 function welcome_message {
 	# I agree its not a very warm welcome, but still we start with greetings
 	dialog --colors --no-collapse --backtitle "$msg_general_title" --msgbox "       Welcome to \ZuTES\ZU\n( \ZbT\ZBrip \ZbE\ZBxpense \ZbS\ZBplitter )" 0 0
-	get_count
+	get_person_count
 }
 
 # Trap handler
