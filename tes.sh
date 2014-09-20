@@ -38,6 +38,7 @@ g_var_share=()
 
 # Global variable used to hold random number
 g_var_rndnum=$RANDOM
+g_var_autoclose_sec=3
 
 # Table used to do all calculation on expense
 declare -A g_var_table
@@ -47,8 +48,10 @@ g_var_authname=("42" "61" "6C" "61" "73" "75" "62" "72" "61" "6D" "61" "6E" "69"
 
 # Modify the following value to support higher limit of users
 g_var_maxcount=10
+
 # Modify this to suite your currency ( I have used INDIAN RUPEE )
-g_var_currency="Rs."
+g_var_currency_prefix="Rs. "
+g_var_currency_suffix=""
 
 # Return code used to indicate the action status
 ret_success=0
@@ -115,10 +118,10 @@ function _write_log {
 }
 
 # General call to show informational message which gets closed after specified seconds
-# If seconds parameter is not provided then default 3 seconds will be used
+# If seconds parameter is not provided then default 'g_var_autoclose_sec' seconds will be used
 function _show_auto_close_message {
 	if [ -z "$2" ]; then
-		dialog --stdout --backtitle "$msg_general_title" --title "****** MESSAGE ******" --pause "$1" 10 70 3
+		dialog --stdout --backtitle "$msg_general_title" --title "****** MESSAGE ******" --pause "$1" 10 70 $g_var_autoclose_sec
 	else
 		dialog --stdout --backtitle "$msg_general_title" --title "****** MESSAGE ******" --pause "$1" 10 70 $2
 	fi
@@ -261,7 +264,7 @@ function do_eqsplit_calculations {
 function pick_persons {
 	local var_i=1
 	local var_share_len=0
-	local var_cmd="dialog --stdout --separate-output --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** PICK PERSONS ******\" --checklist \"Select the person(s) who share $g_var_currency$g_var_expense paid by ${g_var_persons[$(( $g_var_payee-1 ))]}\" 20 60 5"
+	local var_cmd="dialog --stdout --separate-output --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** PICK PERSONS ******\" --checklist \"Select the person(s) who share $g_var_currency_prefix$g_var_expense$g_var_currency_suffix paid by ${g_var_persons[$(( $g_var_payee-1 ))]}\" 20 60 5"
 	while [[ var_i -le $g_var_count ]]
 	do
 		var_cmd="$var_cmd \"$var_i\" \"${g_var_persons[$(( $var_i-1 ))]}\""
@@ -283,7 +286,7 @@ function pick_persons {
 		$FUNCNAME
 	else
 		do_eqsplit_calculations
-		_write_log "[$g_var_date] $g_var_currency$g_var_expense paid by \"${g_var_persons[$(( $g_var_payee-1 ))]}\" for \"$g_var_desc\" is shared among \"" $option_log_no_newline
+		_write_log "[$g_var_date] $g_var_currency_prefix$g_var_expense$g_var_currency_suffix paid by \"${g_var_persons[$(( $g_var_payee-1 ))]}\" for \"$g_var_desc\" is shared among \"" $option_log_no_newline
 		for ((var_i=0;var_i<${#g_var_share[@]};var_i++)) do
 			if [[ $var_i -ne 0 ]]; then
 				_write_log ", " $option_log_no_newline
@@ -303,7 +306,7 @@ function pick_persons {
 # Read who made the payment for the particular transaction
 function pick_payee {
 	local var_i=1
-	local var_cmd="dialog --stdout --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** PICK PAYEE ******\" --radiolist \"Who paid $g_var_currency$g_var_expense for the expense\" 20 60 5"
+	local var_cmd="dialog --stdout --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** PICK PAYEE ******\" --radiolist \"Who paid $g_var_currency_prefix$g_var_expense$g_var_currency_suffix for the expense\" 20 60 5"
 	while [[ var_i -le $g_var_count ]]
 	do
 		var_cmd="$var_cmd \"$var_i\" \"${g_var_persons[$(( $var_i-1 ))]}\" OFF"
@@ -443,10 +446,10 @@ function show_individual_share {
 					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to give/get nothing to/from \"${g_var_persons[$var_i]}\"" >> .$g_var_rndnum.calc
 				elif [[ $(echo "$msg_general_scale; ${g_var_table[$(( $var_req-1 )),$var_i]} > ${g_var_table[$var_i,$(( var_req-1 ))]}" | bc) -eq 1 ]]; then
 					var_amt=$(echo "$msg_general_scale; ${g_var_table[$(( $var_req-1 )),$var_i]} - ${g_var_table[$var_i,$(( var_req-1 ))]}" | bc)
-					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to get $g_var_currency$var_amt from \"${g_var_persons[$var_i]}\"" >> .$g_var_rndnum.calc
+					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to get $g_var_currency_prefix$var_amt$g_var_currency_suffix from \"${g_var_persons[$var_i]}\"" >> .$g_var_rndnum.calc
 				else
 					var_amt=$(echo "$msg_general_scale; ${g_var_table[$var_i,$(( $var_req-1 ))]} - ${g_var_table[$(( $var_req-1 )),$var_i]}" | bc)
-					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to give $g_var_currency$var_amt to \"${g_var_persons[$var_i]}\"" >> .$g_var_rndnum.calc
+					echo "\"${g_var_persons[$(( $var_req-1 ))]}\" has to give $g_var_currency_prefix$var_amt$g_var_currency_suffix to \"${g_var_persons[$var_i]}\"" >> .$g_var_rndnum.calc
 				fi
 			fi
 		done
@@ -662,9 +665,9 @@ function check_prerequisite {
 	if [[ $var_fail -eq 1 ]]; then
 		if [[ $var_writeprm_notfound -eq 1 ]]; then
 			echo "Script can't create intermitent files in current directory"
-			echo "Please adjust the permission is such a way that script can"
+			echo "Please adjust the permission in such a way that script can"
 			echo "create few temporary files which is required for its"
-			echo "internal usuage and doing calculations "
+			echo "internal usage and doing calculations "
 		fi	
 		if [[ $var_dialog_notfound -eq 1 || $var_bc_notfound -eq 1 ]]; then
 			echo "Please install missing component by running the following command from your terminal"
