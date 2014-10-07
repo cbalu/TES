@@ -33,8 +33,9 @@ g_var_persons=()
 g_var_date=""
 g_var_desc=""
 g_var_expense=0
-g_var_payee=""
 g_var_share=()
+g_var_payees_amt=()
+g_var_payees_index=()
 
 # Global variable used to hold random number
 g_var_rndnum=$RANDOM
@@ -55,10 +56,10 @@ g_var_currency_suffix=""
 
 # Return code used to indicate the action status
 ret_success=0
-ret_err_invalid_number=111
-ret_err_max_exceeded=112
-ret_err_invalid_input=113
-ret_err_invalid_expense=114
+ret_err_invalid_input=111
+ret_err_invalid_expense=112
+#ret_err_invalid_number=113
+#ret_err_max_exceeded=114
 
 # Generic text to be used (Need to find a way for i18n)
 #
@@ -73,11 +74,11 @@ msg_err_invalid_number="Entered value makes no sense, please enter value in rang
 msg_err_max_exceeded="Entered value is more than what we can handle now, please enter value in range 2 to $g_var_maxcount"
 msg_err_invalid_input="Entered value doesn't seems to be a valid one, please enter value in range 2 to $g_var_maxcount"
 msg_err_empty_name="One/many of the name is empty, fill all person(s) name to proceed"
-msg_err_invalid_expense="Invalid input, enter valid expense amount"
+msg_err_invalid_expense="One/many of expense is invalid, enter valid expense amount"
 msg_err_missing_description="Short description is missing, please fill that field"
 msg_err_missing_expense="Amount spent value is missing, please fill that field"
 msg_err_min_share_count="Please pick atleast two persons who share the expense"
-msg_err_need_payee="Please pick the person who did the payment to proceed further"
+msg_err_need_payee="Please pick the person(s) who did the payment to proceed further"
 msg_err_pick_indiv="Please choose a person to know his/her share"
 msg_info_add_success="Details added successfully"
 msg_info_empty_log="No details have been added, nothing to show now"
@@ -204,8 +205,9 @@ function validate_expense {
 function clear_global_vars {
 	g_var_expense=0
 	g_var_desc=""
-	g_var_payee=""
-	g_var_share=""
+	g_var_share=()
+	g_var_payees_amt=()
+	g_var_payees_index=()
 }
 
 # Initialize the table before any calculation
@@ -221,32 +223,93 @@ function do_table_init {
 }
 
 # Do the calculation for equally splitting the expense
-function do_eqsplit_calculations {
+function do_share_calculation {
 	local var_individual_share=0
 	local var_share_count=${#g_var_share[@]}
-	local var_payee_index=$(( $g_var_payee-1 ))
+	local var_payee_index=0
 	local var_i=0
 	local var_j=0
 	local var_k=0
+	local var_x=0
+	local var_temp=()
+	local var_ps_count=0
+	local var_ng_count=0
+	local var_index=0
 
-	# Get individual share as we are equally splitting
 	var_individual_share=$(echo "$msg_general_scale; $g_var_expense / $var_share_count" | bc)
 
-	# Logic for calculating individual share
-	for ((var_i=0;var_i<$g_var_count;var_i++)) do
-		for ((var_j=0;var_j<$g_var_count;var_j++)) do
-			if [[ $var_i -eq $var_payee_index ]]; then
-				for ((var_k=0;var_k<$var_share_count;var_k++)) do
-					if [[ $var_j -eq $(( ${g_var_share[$var_k]}-1 )) && $var_i -ne $var_j ]]; then
-						g_var_table[$var_i,$var_j]=$(echo "$msg_general_scale; ${g_var_table[$var_i,$var_j]} + $var_individual_share" | bc)
-						break
-					fi
-				done
-			else
-				break
-			fi
+	# Check whether the amount is paid by single person/multiple persons
+	if [[ ${#g_var_payees_index[@]} -eq 1 ]]; then
+		# Payment done by single person, get individual share as we are equally splitting
+		var_payee_index=$(( ${g_var_payees_index[0]}-1 )) #Only one payee is available so always read 0th index
+
+		# Logic for calculating individual share
+		for ((var_i=0;var_i<$g_var_count;var_i++)) do
+			for ((var_j=0;var_j<$g_var_count;var_j++)) do
+				if [[ $var_i -eq $var_payee_index ]]; then
+					for ((var_k=0;var_k<$var_share_count;var_k++)) do
+						if [[ $var_j -eq $(( ${g_var_share[$var_k]}-1 )) && $var_i -ne $var_j ]]; then
+							g_var_table[$var_i,$var_j]=$(echo "$msg_general_scale; ${g_var_table[$var_i,$var_j]} + $var_individual_share" | bc)
+							break
+						fi
+					done
+				else
+					break
+				fi
+			done
 		done
-	done
+	else
+		# Payment done by multiple persons
+		for ((var_i=0;var_i<$g_var_count;var_i++)) do
+			var_temp[$var_i]=0
+		done
+
+		for ((var_i=0;var_i<$var_share_count;var_i++)) do
+			var_index=${g_var_share[$var_i]}
+			for ((var_j=0;var_j<${#g_var_payees_index[@]};var_j++)) do
+				if [[ $var_index -eq ${g_var_payees_index[$var_j]} ]]; then
+					var_temp[$(( $var_index-1 ))]=$(echo "$msg_general_scale; $var_individual_share - ${g_var_payees_amt[$var_j]}" | bc)
+					if [[ $(echo "$msg_general_scale; ${var_temp[$(( $var_index-1 ))]} > 0" | bc) -eq 1 ]]; then
+						_debug "Got an positive value, so increment count" $option_debug_append_text
+						(( var_ps_count++ ))
+					else
+						_debug "Got an negative value, so increment count" $option_debug_append_text
+						(( var_ng_count++ ))
+					fi
+				fi
+			done
+		done
+		_debug "Got ps_count - $var_ps_count ng_count - $var_ng_count" $option_debug_append_text
+
+		if [[ $var_ps_count -gt 0 && $var_ng_count -gt 0 ]]; then
+			#TODO: Need to add logic to handle this case
+			_debug "Need to add logic to handle this case" $option_debug_append_text
+		elif [[ $var_ng_count -gt 0 ]]; then
+			for ((var_x=0;var_x<${#g_var_payees_index[@]};var_x++)) do
+				var_payee_index=$(( ${g_var_payees_index[$var_x]}-1 ))
+				for ((var_i=0;var_i<$g_var_count;var_i++)) do
+					for ((var_j=0;var_j<$g_var_count;var_j++)) do
+						if [[ $var_i -eq $var_payee_index ]]; then
+							for ((var_k=0;var_k<$var_share_count;var_k++)) do
+								if [[ $var_j -eq $(( ${g_var_share[$var_k]}-1 )) ]]; then
+									#TODO: Add logic to handle this case
+									_debug "Add logic to handle this case" $option_debug_append_text #TODO: Remove this line
+								fi
+							done
+						else
+							break
+						fi
+					done
+				done
+			done
+		else
+			_show_error "This case is not possible and should not occur"
+		fi
+		#TODO: Add code to handle unequal split
+		_show_error "Functionality not yet added, please try later" #TODO: Remove this line after func added
+		clear_global_vars #TODO: Remove this line after testing functionality
+		draw_menu #TODO: Remove this line after testing functionality
+	fi
 
 	# TIP: This code was commented using regex in vim, under command mode
 	# Shift + V - Select the section
@@ -262,22 +325,27 @@ function do_eqsplit_calculations {
 
 # Read who are sharing the particular expense incured
 function pick_persons {
-	local var_i=1
+	local var_i=0
+	local var_cmd=""
 	local var_share_len=0
-	local var_cmd="dialog --stdout --separate-output --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** PICK PERSONS ******\" --checklist \"Select the person(s) who share $g_var_currency_prefix$g_var_expense$g_var_currency_suffix paid by ${g_var_persons[$(( $g_var_payee-1 ))]}\" 20 60 5"
+
+	# Compute the total amount from all persons
+	while [[ var_i -lt ${#g_var_payees_amt[@]} ]]
+	do
+		g_var_expense=$(echo "$msg_general_scale; $g_var_expense + ${g_var_payees_amt[$var_i]}" | bc)
+		(( var_i++ ))
+	done
+
+	# Ask user for person(s) who share the total expense
+	var_cmd="dialog --stdout --separate-output --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** PICK PERSONS ******\" --checklist \"Select the person(s) who share $g_var_currency_prefix$g_var_expense$g_var_currency_suffix\" 20 60 5"
+	var_i=1
 	while [[ var_i -le $g_var_count ]]
 	do
-		var_cmd="$var_cmd \"$var_i\" \"${g_var_persons[$(( $var_i-1 ))]}\""
-		# Make sure payee got selected by default for share
-		if [[ $var_i -eq $g_var_payee ]]; then
-			var_cmd="$var_cmd ON"
-		else
-			var_cmd="$var_cmd OFF"
-		fi
+		var_cmd="$var_cmd \"$var_i\" \"${g_var_persons[$(( $var_i-1 ))]}\" OFF"
 		(( var_i++ ))
 	done
 	g_var_share=(`eval $var_cmd`)
-	validate_keystroke $? $FUNCNAME pick_payee
+	validate_keystroke $? $FUNCNAME get_total_expense
 
 	# Make sure we have atleast two persons to share the expense
 	var_share_len=${#g_var_share[@]}
@@ -285,8 +353,11 @@ function pick_persons {
 		_show_error "$msg_err_min_share_count"
 		$FUNCNAME
 	else
-		do_eqsplit_calculations
-		_write_log "[$g_var_date] $g_var_currency_prefix$g_var_expense$g_var_currency_suffix paid by \"${g_var_persons[$(( $g_var_payee-1 ))]}\" for \"$g_var_desc\" is shared among \"" $option_log_no_newline
+		# Do individual person(s) share calculation
+		do_share_calculation
+
+		# After calculation add the details to log
+		_write_log "[$g_var_date] $g_var_currency_prefix$g_var_expense$g_var_currency_suffix for \"$g_var_desc\" is shared among \"" $option_log_no_newline
 		for ((var_i=0;var_i<${#g_var_share[@]};var_i++)) do
 			if [[ $var_i -ne 0 ]]; then
 				_write_log ", " $option_log_no_newline
@@ -297,44 +368,53 @@ function pick_persons {
 			_write_log "${g_var_persons[$(( ${g_var_share[$var_i]}-1 ))]}" $option_log_no_newline
 		done
 		_write_log "\"" $option_log_add_newline
-		_show_message "$msg_info_add_success"
-		clear_global_vars
-		draw_menu
 	fi
-}
 
-# Read who made the payment for the particular transaction
-function pick_payee {
-	local var_i=1
-	local var_cmd="dialog --stdout --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** PICK PAYEE ******\" --radiolist \"Who paid $g_var_currency_prefix$g_var_expense$g_var_currency_suffix for the expense\" 20 60 5"
-	while [[ var_i -le $g_var_count ]]
-	do
-		var_cmd="$var_cmd \"$var_i\" \"${g_var_persons[$(( $var_i-1 ))]}\" OFF"
-		(( var_i++ ))
-	done
-	g_var_payee=(`eval $var_cmd`)
-	validate_keystroke $? $FUNCNAME get_total_expense
-
-	if [[ ${#g_var_payee} -eq 0 ]]; then
-		_show_error "$msg_err_need_payee"
-		$FUNCNAME
-	else
-		pick_persons
-	fi
+	# Show success message and return to menu
+	_show_message "$msg_info_add_success"
+	clear_global_vars
+	draw_menu
 }
 
 # Read total expense incured for a particular cause
 function get_total_expense {
+	local var_i=0
 	local var_ret=0
 	local var_count=0
+	local var_index=0
 	local var_expense=0
 	local var_date=""
 	local var_desc=""
+	local var_cmd=""
+
+	# If date is not initialized then get current date
 	if [[ ${#g_var_date} -eq 0 ]]; then
 		g_var_date=`date +%d`/`date +%m`/`date +%Y`
 	fi
-	dialog --stdout --extra-button --extra-label "$msg_label_pickdate" --cancel-label "$msg_label_back" --backtitle "$msg_general_title" --title "****** EXPENSE DETAILS ******" --mixedform "Enter the following details" 18 60 0 "Trip Date: " 1 1 "$g_var_date" 1 20 20 0 2 "Short description: " 3 1 "$g_var_desc" 3 20 120 0 0 "Amount spent: " 5 1 "$g_var_expense" 5 20 10 0 0 > .tmp
+
+	# For every person selected initialize their amount
+	while [[ var_i -lt ${#g_var_payees_index[@]} ]]
+	do
+		if [[ -z ${g_var_payees_amt[$var_i]} ]]; then
+			g_var_payees_amt[$var_i]=0
+		fi
+		(( var_i++ ))
+	done
+
+	# Get all the required details from user
+	var_cmd="dialog --stdout --extra-button --extra-label \"$msg_label_pickdate\" --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** EXPENSE DETAILS ******\" --mixedform \"Enter the following details\" 18 60 0 \"Trip Date: \" 1 1 \"$g_var_date\" 1 20 20 0 2 \"Short description: \" 2 1 \"$g_var_desc\" 2 20 120 0 0 \"Add following person(s) expense amount: \" 3 1 \"\" 3 0 0 0 0"
+	var_i=0
+	while [[ var_i -lt ${#g_var_payees_index[@]} ]]
+	do
+		var_index=$(( ${g_var_payees_index[$var_i]}-1 ))
+		var_cmd="$var_cmd \"${g_var_persons[$var_index]} :\" $(( $var_i+4 )) 1 \"${g_var_payees_amt[$var_i]}\" $(( $var_i+4 )) 20 10 0 0"
+		(( var_i++ ))
+	done
+	var_cmd="$var_cmd > .tmp"
+	eval $var_cmd
 	var_ret=$?
+
+	# If user tries to change date then we land here
 	if [[ $var_ret  -eq 3 ]]; then
 		local var_day=`echo $g_var_date | cut -d'/' -f1`
 		local var_month=`echo $g_var_date | cut -d'/' -f2`
@@ -346,37 +426,61 @@ function get_total_expense {
 	fi
 	validate_keystroke $var_ret $FUNCNAME draw_menu
 
+	# So far everything went fine, read all required
+	# data and add to respective field to proceed further
+	var_i=0
 	while IFS= read -r line
 	do
     	if [[ $var_count -eq 0 ]]; then
+			# Read date
         	var_date=$line
     	elif [[ $var_count -eq 1 ]]; then
+			# Read description for expense and validate
         	var_desc=$line
-    	elif [[ $var_count -eq 2 ]]; then
-        	var_expense=$line
+			if [[ ${#var_desc} -eq 0 ]]; then
+				_show_error "$msg_err_missing_description"
+				$FUNCNAME
+			fi
+			g_var_desc=$var_desc
+    	else
+			# Read person(s) paid amounts and validate
+			var_expense=$line
+			var_ret=$(validate_expense $var_expense)
+			if [[ $var_ret -eq $ret_err_invalid_expense ]] || [[ $var_expense -eq 0 ]]; then
+				_show_error "$msg_err_invalid_expense"
+				$FUNCNAME
+			else
+				g_var_payees_amt[$var_i]=$var_expense
+				(( var_i++ ))
+			fi
     	fi
     	let var_count++
 	done <".tmp"
 
 	rm -f .tmp > /dev/null 2>&1
-	if [[ ${#var_desc} -eq 0 ]]; then
-		_show_error "$msg_err_missing_description"
-		$FUNCNAME
-	fi
-	g_var_desc=$var_desc
-	if [[ ${#var_expense} -eq 0 ]]; then
-		_show_error "$msg_err_missing_expense"
-		$FUNCNAME
-	fi
+	pick_persons
+}
 
-	g_var_expense=$var_expense
-	var_ret=$(validate_expense $g_var_expense)
-	if [[ $var_ret -eq $ret_err_invalid_expense ]]; then
-		_show_error "$msg_err_invalid_expense"
+# Read trip expense incured
+function add_trip_expense {
+	local var_i=1
+	local var_payee_count=0
+	local var_cmd="dialog --stdout --separate-output --cancel-label \"$msg_label_back\" --backtitle \"$msg_general_title\" --title \"****** PICK PERSONS ******\" --checklist \"Select the person(s) who made payment\" 20 60 5"
+	while [[ var_i -le $g_var_count ]]
+	do
+		var_cmd="$var_cmd \"$var_i\" \"${g_var_persons[$(( $var_i-1 ))]}\" OFF"
+		(( var_i++ ))
+	done
+	g_var_payees_index=(`eval $var_cmd`)
+	validate_keystroke $? $FUNCNAME draw_menu
+
+	# Make sure we have atleast one person selected
+	var_payee_count=${#g_var_payees_index[@]}
+	if [[ $var_payee_count -eq 0 ]]; then
+		_show_error "$msg_err_need_payee"
 		$FUNCNAME
-	else
-		pick_payee
 	fi
+	get_total_expense
 }
 
 # Show my name
@@ -472,7 +576,7 @@ function draw_menu {
 	                      5 "Exit this program"`
 	validate_keystroke $? $FUNCNAME get_person_names
 	if [[ $var_ret -eq 1 ]]; then
-		get_total_expense
+		add_trip_expense
 	elif [[ $var_ret -eq 2 ]]; then
 		show_individual_share
 	elif [[ $var_ret -eq 3 ]]; then
