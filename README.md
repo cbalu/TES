@@ -62,7 +62,7 @@ Install the missing tools and then re-run the script.
 ### Welcome screen
 If all the dependant tools are present in the machine then the script will start its execution with the welcome message. 
 
-Sample Screenshot: [welcome message](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/01-welcome_screen.png)
+Sample Screenshot: [welcome message](/screenshots/01-welcome_screen.png?raw=true "Welcome message")
 
 ### Enter persons count
 Once you get past the welcome message you can enter how many persons involved in the trip. For now we accept **minimum 2 persons and maximum 10 persons**
