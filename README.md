@@ -39,7 +39,7 @@ If you have git installed in your linux machine you can checkout the entire repo
 
 If you wish to get only the script file for your usage then do the following
 
-Open [tes.sh](https://raw.githubusercontent.com/cbalu/TES/master/tes.sh) in a new tab in your browser and save the script locally.
+Open [tes.sh](tes.sh) in a new tab in your browser and save the script locally.
 
 ### Preparing the script for execution
 The script has to be made as executable before running it. This can be achived by changing to the corresponding directory where the script file was saved and then using the following command
@@ -53,7 +53,7 @@ The script can be executed by changing to the corresponding directory where the 
 
 Once the script starts execution the first thing it does is by checking the tools required to make it run and if it can't find them then it shows the corresponding error along with instruction to install the missing tools. The following image shows one such case
 
-![alt text](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/00-dependency_error.png "Sample error message")
+![SampleError](screenshots/00-dependency_error.png "Sample error message")
 
 Install the missing tools and then re-run the script.
 
@@ -62,27 +62,49 @@ Install the missing tools and then re-run the script.
 ### Welcome screen
 If all the dependant tools are present in the machine then the script will start its execution with the welcome message. 
 
-Sample Screenshot: [welcome message](screenshots/01-welcome_screen.png)
+Sample Screenshot:
+
+![WelcomeMessage](screenshots/01-welcome_screen.png "Welcome message")
 
 ### Enter persons count
 Once you get past the welcome message you can enter how many persons involved in the trip. For now we accept **minimum 2 persons and maximum 10 persons**
-Sample Screenshot: [person count](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/02-no_of_persons.png)
+Sample Screenshot:
+
+![PersonCount](screenshots/02-no_of_persons.png "Person count")
 
 ### Enter persons name
 Based on the count the script shows the corresponding text field to enter persons name involved in trip. You can use `<UP> <DOWN>` arrows to navigated between different name text field. Once the names are entered you can use `<ENTER>` key to proceed further.
-Sample Screenshot: [person name](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/03-person_names.png)
+Sample Screenshot:
+
+![PersonName](screenshots/03-person_names.png "Person name")
 
 ### Menu selection
 You can use `<UP> <DOWN>` or numbers to select the corresponding items in menu then use `<ENTER>` key to make the selection.
-Sample Screenshot: [menu](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/04-menu.png)
+Sample Screenshot: 
+
+![Menu](screenshots/04-menu.png "Menu")
 
 ### Adding trip expense
 Once you choose the **Add trip details (Equal split)**  in menu, you can start entering the expense incurred for individual item, to change the trip date choose "Pick date" button and then pick the date(use `<TAB>` to move between day, month and year and user `<UP><DOWN>` arrow to change selection) also to move between "Short description" and "Amount spent" use `<UP><DOWN>` key and then followed by who paid the expense(use `<SPACEBAR>` to make the selection) along with who are all the persons going to share the expense. Once the details has been added a confirmation message is shown
-Sample Screenshots: [expense-cost](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/05-enter_expense.png) - [pick-date](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/05a-pick_date.png) - [pick-payee](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/06-pick_payee.png) - [persons-sharing](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/07-share_persons.png) - [confirmation-msg](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/08-details_added.png)
+Sample Screenshots:
+
+![expense-cost](screenshots/05-enter_expense.png "Expense Cost")
+
+![pick-date](screenshots/05a-pick_date.png "Pick Date")
+
+![pick-payee](screenshots/06-pick_payee.png "Pick Payee")
+
+![persons-sharing](screenshots/07-share_persons.png "Person Sharing")
+
+![confirmation-msg](screenshots/08-details_added.png "Confirmation Message")
 
 ### Viewing log
 You can view the log for every expense added from the menu by selecting **Show details log**
-Sample Screenshots: [menu](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/09-view_log.png) - [log-view](https://raw.githubusercontent.com/cbalu/TES/master/screenshots/10-log_view.png)
+Sample Screenshots:
+
+![menu](screenshots/09-view_log.png "Menu")
+
+![log-view](screenshots/10-log_view.png "Log View")
 
 ### Getting individual share
 You can get individual person share by selecting **Show individual share** under menu and then selecting the corresponding persons (use `<SPACEBAR>` to make the selection) for whom we need to calculate his share
